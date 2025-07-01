@@ -213,6 +213,92 @@ int nsh_execute(char **args){
     return nsh_launch(args);
 }
 
+int nsh_spawn_process(int in_fd, int out_fd, char **args){
+    pid_t pid, wpid;
+    int status = 1, pstatus;
+    int fd[2];
+    if(pipe(fd) == -1){
+        perror("nsh");
+        exit(EXIT_FAILURE);
+    }
+    pid = fork(); // create a child process
+    if(pid < 0){
+        perror("nsh");
+        exit(EXIT_FAILURE);
+    }
+    else if(pid == 0){
+        // child process
+        close(fd[0]);
+        if(in_fd != STDIN_FILENO){
+            dup2(in_fd,  STDIN_FILENO);
+            close(in_fd);
+        }
+        if(out_fd != STDOUT_FILENO){
+            dup2(out_fd, STDOUT_FILENO);
+            close(out_fd);
+        }
+        status = nsh_execute(args);
+        write(fd[1], &status, sizeof(status));
+        close(fd[1]);
+        exit(EXIT_SUCCESS);
+    }
+    else{
+        close(fd[1]);
+        do{
+            wpid = waitpid(pid, &pstatus, WUNTRACED);
+        } while(!WIFEXITED(pstatus) && !WIFSIGNALED(pstatus));
+        read(fd[0], &status, sizeof(status));
+        close(fd[0]);
+    }
+    return status;
+}
+
+int nsh_fork_pipes(char *line){
+    char **args;
+    int status = 1;
+    int in = STDIN_FILENO; // first process gets input from stdin
+    int fd[2], i;
+    char **commands = nsh_parse(line, "|");
+
+    // empty command
+    if(commands[0] == NULL) return 1;
+
+    // no piping
+    if (commands[1] == NULL) {
+        char **args = nsh_parse(commands[0], NSH_TOK_DELIM);
+        int status = nsh_execute(args);
+        free(args);
+        free(commands);
+        return status;
+    }
+
+    for(i = 0; commands[i + 1] != NULL; i++){
+        // parse and seperate the args delimiting by white spaces
+        args = nsh_parse(commands[i], NSH_TOK_DELIM);
+
+        // create a new pipe
+        if(pipe(fd) == -1){
+            perror("nsh");
+            exit(EXIT_FAILURE);
+        }
+
+        // in from previous stage acts as input, and write end of pipe acts as output
+        status = nsh_spawn_process(in, fd[1], args);
+
+        close(fd[1]); // close the write end
+
+        in = fd[0]; // read end of the pipe becomes the in for next stage
+        free(args);
+
+        if(status == 0) return 0;
+    }
+
+    // handle last process: in from previous stage, out is stdout
+    // parse and seperate the args delimiting by white spaces
+    args = nsh_parse(commands[i], NSH_TOK_DELIM);
+    return nsh_spawn_process(in, STDOUT_FILENO, args);
+}
+
 void nsh_loop(int interactive){
     if(interactive == 1){
         printf("==============================================================\n");
@@ -236,10 +322,7 @@ void nsh_loop(int interactive){
         // parse and seperate the commands chained by ";"
         commands = nsh_parse(line, ";");
         for(int i = 0; commands[i] != NULL; i++){
-            // parse and seperate the args delimiting by white spaces
-            args = nsh_parse(commands[i], " \n\t\r\a");
-            status = nsh_execute(args); // execute
-            free(args);
+            status = nsh_fork_pipes(commands[i]);
             if(status == 0) break;
         }
         free(commands);
@@ -261,5 +344,5 @@ int main(int argc, char **argv){
         interactive = 0;
     }
     nsh_loop(interactive); // run command loop
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
