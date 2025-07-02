@@ -22,9 +22,10 @@ NSHELL is a basic project written in C language written by me, in order to learn
 - waitpid() to let the parent wait for child process till it is terminated or killed.
 - execvp() to execute executable given in arguments.
 - open() and close() to open and close file descriptors to handle input and output.
+- read() and write() to read and write into files and for input/output.
 - pipe() to create pipes for inter-process communication and implement piping of commands.
 
 ## References
-- [link](https://brennan.io/2015/01/16/write-a-shell-in-c/) - for basic structure of code of shell.
-- [link](https://pages.cs.wisc.edu/~remzi/OSTEP/) - for understanding process API and key concepts.
-- [link](https://linux.die.net/man/) - for Linux man pages of various system calls.
+- [Stephen Brennan's Tutorial](https://brennan.io/2015/01/16/write-a-shell-in-c/) - as a start point for basic structure of code of shell.
+- [OSTEP Book](https://pages.cs.wisc.edu/~remzi/OSTEP/) - for understanding process API and key concepts.
+- [Linux Man Pages (Web)](https://linux.die.net/man/) - for Linux man pages of various system calls.
