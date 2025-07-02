@@ -1,5 +1,5 @@
 # NSHELL
-NSHELL is a basic project written in C language written by me, in order to learn the use of system calls provided by UNIX operating system.
+NSHELL is a basic project written in C language written by me, in order to learn the use of system calls provided by UNIX-based operating systems.
 
 ## How to run
 - Build the code with `make` command.
@@ -23,6 +23,7 @@ NSHELL is a basic project written in C language written by me, in order to learn
 - execvp() to execute executable given in arguments.
 - open() and close() to open and close file descriptors to handle input and output.
 - read() and write() to read and write into files and for input/output.
+- chdir() to implement built-in command cd for changing current directory.
 - pipe() to create pipes for inter-process communication and implement piping of commands.
 
 ## References
